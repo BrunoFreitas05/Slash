@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slash — Gerenciador de Atalhos para Atendimento</title>
+  <meta name="description" content="Slash é uma extensão Chrome que expande atalhos de texto em macros completas. Para times de atendimento ao cliente." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:       #2563EB;
+      --blue-dark:  #1D4ED8;
+      --blue-deep:  #1E3A8A;
+      --blue-ghost: #EFF6FF;
+      --blue-mid:   #DBEAFE;
+      --ink:        #0F172A;
+      --muted:      #64748B;
+      --border:     #E2E8F0;
+      --white:      #FFFFFF;
+      --radius:     12px;
+      --radius-sm:  8px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; color: var(--ink); background: var(--white); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+    /* NAV */
+    nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 24px; }
+    .nav-inner { max-width: 1080px; margin: 0 auto; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 700; font-size: 17px; letter-spacing: -0.3px; }
+    .nav-logo img { width: 32px; height: 32px; border-radius: 8px; }
+    .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
+    .nav-links a { text-decoration: none; color: var(--muted); font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-cta { background: var(--blue); color: var(--white) !important; padding: 8px 18px; border-radius: 8px; font-size: 14px !important; font-weight: 600 !important; transition: background 0.2s !important; }
+    .nav-cta:hover { background: var(--blue-dark) !important; }
+
+    /* HERO */
+    .hero { background: linear-gradient(160deg, var(--blue-deep) 0%, var(--blue-dark) 50%, var(--blue) 100%); padding: 80px 24px 100px; text-align: center; position: relative; overflow: hidden; }
+    .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 50% at 50% 100%, rgba(37,99,235,0.4) 0%, transparent 70%); pointer-events: none; }
+    .hero-inner { max-width: 720px; margin: 0 auto; position: relative; animation: fadeUp 0.6s ease both; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .hero-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); border-radius: 100px; padding: 5px 14px; font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 500; margin-bottom: 28px; }
+    .hero h1 { font-size: clamp(36px, 6vw, 60px); font-weight: 800; color: var(--white); line-height: 1.1; letter-spacing: -1.5px; margin-bottom: 20px; }
+    .hero h1 em { font-style: normal; color: #93C5FD; }
+    .hero p { font-size: 18px; color: rgba(255,255,255,0.75); max-width: 520px; margin: 0 auto 40px; line-height: 1.7; }
+    .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--white); color: var(--blue-dark); font-weight: 700; font-size: 15px; padding: 14px 28px; border-radius: var(--radius-sm); text-decoration: none; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); }
+    .btn-ghost { display: inline-flex; align-items: center; gap: 8px; border: 1.5px solid rgba(255,255,255,0.3); color: var(--white); font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: var(--radius-sm); text-decoration: none; transition: border-color 0.2s, background 0.2s; }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.08); }
+
+    /* DEMO */
+    .hero-demo { margin-top: 56px; display: flex; justify-content: center; animation: fadeUp 0.6s 0.2s ease both; }
+    .demo-wrap { background: var(--white); border-radius: 14px; box-shadow: 0 24px 80px rgba(0,0,0,0.35); padding: 20px; width: 100%; max-width: 520px; text-align: left; }
+    .demo-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+    .demo-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .demo-dot:nth-child(1) { background: #FF5F57; }
+    .demo-dot:nth-child(2) { background: #FEBC2E; }
+    .demo-dot:nth-child(3) { background: #28C840; }
+    .demo-field { background: #F8FAFC; border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 14px; color: var(--ink); font-family: 'Inter', sans-serif; }
+    .demo-cursor { display: inline-block; width: 2px; height: 15px; background: var(--blue); vertical-align: middle; margin-left: 1px; animation: blink 1s step-end infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .demo-picker { margin-top: 8px; background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 8px 24px rgba(0,0,0,0.1); overflow: hidden; }
+    .demo-picker-header { padding: 10px 14px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); }
+    .demo-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid #F1F5F9; }
+    .demo-item:last-child { border-bottom: none; }
+    .demo-item.active { background: var(--blue-ghost); }
+    .demo-shortcut { background: var(--blue-mid); color: var(--blue-dark); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; font-family: monospace; white-space: nowrap; }
+    .demo-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+    .demo-preview { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+
+    /* SECTIONS */
+    section { padding: 80px 24px; }
+    .section-inner { max-width: 1080px; margin: 0 auto; }
+    .section-label { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 12px; }
+    .section-title { font-size: clamp(26px, 4vw, 38px); font-weight: 800; letter-spacing: -0.8px; line-height: 1.15; margin-bottom: 16px; }
+    .section-sub { font-size: 17px; color: var(--muted); max-width: 560px; line-height: 1.7; }
+
+    /* COMO FUNCIONA */
+    .how { background: var(--blue-ghost); }
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 32px; margin-top: 48px; }
+    .step { background: var(--white); border-radius: var(--radius); padding: 28px; border: 1px solid var(--border); }
+    .step-num { width: 36px; height: 36px; background: var(--blue); color: var(--white); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; margin-bottom: 16px; }
+    .step h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; }
+    .step p { font-size: 14px; color: var(--muted); line-height: 1.65; }
+    .step-key { display: inline-block; background: var(--ink); color: var(--white); font-family: monospace; font-size: 18px; font-weight: 700; width: 36px; height: 36px; border-radius: 8px; text-align: center; line-height: 36px; margin-bottom: 16px; box-shadow: 0 3px 0 rgba(0,0,0,0.4); }
+
+    /* FEATURES */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 48px; }
+    .feature-card { border: 1.5px solid var(--border); border-radius: var(--radius); padding: 28px; transition: border-color 0.2s, box-shadow 0.2s; }
+    .feature-card:hover { border-color: var(--blue); box-shadow: 0 4px 20px rgba(37,99,235,0.08); }
+    .feature-card.soon { opacity: 0.45; pointer-events: none; position: relative; }
+    .feature-card.soon::after { content: 'Em breve'; position: absolute; top: 16px; right: 16px; background: var(--border); color: var(--muted); font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 100px; letter-spacing: 0.5px; text-transform: uppercase; }
+    .feature-icon { font-size: 28px; margin-bottom: 14px; display: block; }
+    .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.2px; }
+    .feature-card p { font-size: 14px; color: var(--muted); line-height: 1.65; }
+
+    /* NÃO FAZ */
+    .nao-faz { background: var(--blue-ghost); }
+    .nao-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 40px; }
+    .nao-item { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 22px 24px; display: flex; align-items: flex-start; gap: 14px; }
+    .nao-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+    .nao-item h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; color: var(--ink); }
+    .nao-item p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* TOKENS */
+    .tokens-section { background: var(--ink); }
+    .tokens-section .section-title { color: var(--white); }
+    .tokens-section .section-sub { color: rgba(255,255,255,0.55); }
+    .tokens-section .section-label { color: #60A5FA; }
+    .tokens-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 36px; }
+    .token-chip { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 8px 14px; font-family: monospace; font-size: 14px; color: #93C5FD; }
+    .token-chip span { color: rgba(255,255,255,0.4); font-size: 12px; margin-left: 8px; font-family: 'Inter', sans-serif; }
+
+    /* SOBRE */
+    .about-grid { display: grid; grid-template-columns: 1fr; gap: 32px; margin-top: 48px; max-width: 640px; }
+    .about-text p { font-size: 16px; color: var(--muted); line-height: 1.8; margin-bottom: 16px; }
+    .about-text p:last-child { margin-bottom: 0; }
+    .about-card { background: var(--blue-ghost); border: 1.5px solid var(--blue-mid); border-radius: var(--radius); padding: 32px; }
+    .about-card .label { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+    .stat { margin-bottom: 20px; }
+    .stat-num { font-size: 36px; font-weight: 800; color: var(--blue-dark); letter-spacing: -1px; line-height: 1; }
+    .stat-label { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+    /* PRIVACY */
+    .privacy { background: #F8FAFC; }
+    .privacy-box { background: var(--white); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 48px; margin-top: 40px; }
+    .privacy-box h3 { font-size: 18px; font-weight: 700; color: var(--ink); margin: 28px 0 10px; padding-top: 28px; border-top: 1px solid var(--border); }
+    .privacy-box h3:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+    .privacy-box p { font-size: 15px; color: var(--muted); line-height: 1.75; margin-bottom: 12px; }
+    .privacy-box ul { margin: 8px 0 12px 20px; }
+    .privacy-box ul li { font-size: 15px; color: var(--muted); line-height: 1.75; margin-bottom: 6px; }
+    .privacy-highlight { background: var(--blue-ghost); border-left: 3px solid var(--blue); padding: 14px 18px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; margin: 16px 0; font-size: 15px; color: var(--blue-dark); font-weight: 500; }
+
+    /* FOOTER */
+    footer { background: var(--ink); color: rgba(255,255,255,0.5); text-align: center; padding: 32px 24px; font-size: 14px; }
+    footer a { color: rgba(255,255,255,0.6); text-decoration: none; }
+    footer a:hover { color: var(--white); }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      nav .nav-links { display: none; }
+      .about-grid { grid-template-columns: 1fr; gap: 32px; }
+      .privacy-box { padding: 28px; }
+      section { padding: 56px 20px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <img src="icon_source.png" alt="Slash" />
+      Slash
+    </a>
+    <ul class="nav-links">
+      <li><a href="#como-funciona">Como funciona</a></li>
+      <li><a href="#funcionalidades">Funcionalidades</a></li>
+      <li><a href="#nao-faz">O que não faz</a></li>
+      <li><a href="#sobre">Sobre</a></li>
+      <li><a href="#privacidade">Privacidade</a></li>
+      <li><a href="https://chromewebstore.google.com" class="nav-cta">Instalar extensão</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge"><span>⚡</span> Para times de atendimento ao cliente</div>
+    <h1>Digite <em>/atalho</em>,<br>envie a resposta certa.</h1>
+    <p>Slash expande atalhos de teclado em macros completas, direto no seu sistema de atendimento. Sem copiar e colar, sem perder tempo.</p>
+    <div class="hero-actions">
+      <a href="https://chromewebstore.google.com" class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 8l4 4-4 4M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Instalar no Chrome — grátis
+      </a>
+      <a href="#como-funciona" class="btn-ghost">Ver como funciona</a>
+    </div>
+  </div>
+  <div class="hero-demo">
+    <div class="demo-wrap">
+      <div class="demo-bar">
+        <div class="demo-dot"></div>
+        <div class="demo-dot"></div>
+        <div class="demo-dot"></div>
+      </div>
+      <div class="demo-field">/saudacao<span class="demo-cursor"></span></div>
+      <div class="demo-picker">
+        <div class="demo-picker-header">Minhas macros</div>
+        <div class="demo-item active">
+          <div><div class="demo-shortcut">/saudacao</div></div>
+          <div>
+            <div class="demo-title">Saudação e apresentação</div>
+            <div class="demo-preview">Olá, {cliente}! Tudo bem? Meu nome é {atendente}...</div>
+          </div>
+        </div>
+        <div class="demo-item">
+          <div><div class="demo-shortcut">/sem_registro</div></div>
+          <div>
+            <div class="demo-title">Não possui registro de postagem</div>
+            <div class="demo-preview">Identificamos que o objeto ainda não...</div>
+          </div>
+        </div>
+        <div class="demo-item">
+          <div><div class="demo-shortcut">/prazo</div></div>
+          <div>
+            <div class="demo-title">Dentro do prazo</div>
+            <div class="demo-preview">O prazo de entrega previsto é de...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section class="how" id="como-funciona">
+  <div class="section-inner">
+    <div class="section-label">Como funciona</div>
+    <h2 class="section-title">Três passos. Zero fricção.</h2>
+    <p class="section-sub">Slash funciona inteiramente no navegador. Sem servidor, sem cadastro, sem configuração.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-key">/</div>
+        <h3>Digite a barra e o atalho</h3>
+        <p>Em qualquer campo de texto do seu sistema de atendimento, digite <strong>/</strong> seguido do atalho da macro que você quer usar.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Selecione no picker</h3>
+        <p>Um menu aparece com as macros correspondentes. Navegue com as setas ou continue digitando para filtrar. Pressione Enter para confirmar.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Texto expandido, automaticamente</h3>
+        <p>A macro completa é inserida no campo. Variáveis como <code>{cliente}</code> e <code>{atendente}</code> são preenchidas com os dados do ticket aberto.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="funcionalidades">
+  <div class="section-inner">
+    <div class="section-label">Funcionalidades</div>
+    <h2 class="section-title">O que o Slash faz.</h2>
+    <p class="section-sub">Tudo salvo localmente no seu navegador — rápido, privado e sem dependência de internet para funcionar.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h3>Picker de macros com /</h3>
+        <p>Digite <code>/</code> em qualquer campo de texto e um menu aparece com suas macros. Filtre pelo nome ou atalho e insira com Enter.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📁</span>
+        <h3>Pastas por categoria</h3>
+        <p>Organize suas macros em pastas — por transportadora, tipo de ocorrência, fluxo de atendimento. Crie, renomeie e apague pastas quando quiser.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">✏️</span>
+        <h3>Editor rico de macros</h3>
+        <p>Escreva macros com formatação (negrito, itálico, links, imagens), tokens de variáveis e campos dinâmicos para preenchimento na hora do uso.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔤</span>
+        <h3>Variáveis dinâmicas</h3>
+        <p>Use tokens como <code>{cliente}</code>, <code>{atendente}</code>, <code>{transportadora}</code> — Slash lê os campos do ticket aberto e preenche automaticamente.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📊</span>
+        <h3>Importar e exportar planilha</h3>
+        <p>Importe macros de um arquivo CSV ou XLSX de uma vez. Exporte sua biblioteca para backup ou para transferir para outra máquina.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔒</span>
+        <h3>Login com Google</h3>
+        <p>Autenticação segura via conta Google para identificar o usuário. Sem senha adicional para lembrar.</p>
+      </div>
+      <div class="feature-card soon">
+        <span class="feature-icon">👥</span>
+        <h3>Compartilhamento entre agentes</h3>
+        <p>Envie macros para colegas do time como cópia independente. Cada um adapta à própria necessidade sem afetar o original.</p>
+      </div>
+      <div class="feature-card soon">
+        <span class="feature-icon">🏢</span>
+        <h3>Biblioteca oficial da empresa</h3>
+        <p>Gestores criam e mantêm uma biblioteca compartilhada com todo o time. Padronização de respostas sem e-mail e sem planilha.</p>
+      </div>
+      <div class="feature-card soon">
+        <span class="feature-icon">☁️</span>
+        <h3>Sync na nuvem</h3>
+        <p>Suas macros sincronizadas entre dispositivos. Troque de computador e encontre tudo exatamente onde você deixou.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NÃO FAZ -->
+<section class="nao-faz" id="nao-faz">
+  <div class="section-inner">
+    <div class="section-label">Transparência</div>
+    <h2 class="section-title">O que o Slash <em style="font-style:normal;color:var(--blue)">não</em> faz.</h2>
+    <p class="section-sub">Tão importante quanto o que faz — para você saber exatamente o que está instalando.</p>
+    <div class="nao-grid">
+      <div class="nao-item">
+        <div class="nao-icon">🚫</div>
+        <div>
+          <h4>Não lê o conteúdo dos seus tickets</h4>
+          <p>O Slash detecta campos de texto para inserir macros, mas nunca lê, grava ou transmite o conteúdo das conversas de atendimento.</p>
+        </div>
+      </div>
+      <div class="nao-item">
+        <div class="nao-icon">🚫</div>
+        <div>
+          <h4>Não rastreia sua navegação</h4>
+          <p>Não há coleta de histórico de páginas visitadas, cliques ou qualquer dado comportamental de navegação.</p>
+        </div>
+      </div>
+      <div class="nao-item">
+        <div class="nao-icon">🚫</div>
+        <div>
+          <h4>Não envia dados para servidor externo</h4>
+          <p>Nesta versão, todas as macros ficam salvas localmente no <code>chrome.storage</code> do seu navegador. Nenhum dado é transmitido a servidores de terceiros.</p>
+        </div>
+      </div>
+      <div class="nao-item">
+        <div class="nao-icon">🚫</div>
+        <div>
+          <h4>Não vende ou compartilha seus dados</h4>
+          <p>Não há integração com redes de publicidade, corretores de dados ou qualquer serviço de analytics externo.</p>
+        </div>
+      </div>
+      <div class="nao-item">
+        <div class="nao-icon">🚫</div>
+        <div>
+          <h4>Não funciona em páginas sem campo de texto ativo</h4>
+          <p>O picker só aparece quando você digita <code>/</code> num campo de texto. O Slash não fica rodando em segundo plano em qualquer aba aberta.</p>
+        </div>
+      </div>
+      <div class="nao-item">
+        <div class="nao-icon">🚫</div>
+        <div>
+          <h4>Não tem acesso administrativo ao seu sistema</h4>
+          <p>O Slash só insere texto onde você já está digitando. Não abre janelas, não clica em botões, não navega por páginas de forma autônoma.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOKENS -->
+<section class="tokens-section">
+  <div class="section-inner">
+    <div class="section-label">Variáveis dinâmicas</div>
+    <h2 class="section-title" style="color:white">Macros que sabem quem está na tela.</h2>
+    <p class="section-sub">Slash lê os campos do ticket aberto e preenche as variáveis automaticamente. Escreva uma vez, use sempre.</p>
+    <div class="tokens-grid">
+      <div class="token-chip">{cliente} <span>Nome do solicitante</span></div>
+      <div class="token-chip">{atendente} <span>Agente responsável</span></div>
+      <div class="token-chip">{email} <span>E-mail do cliente</span></div>
+      <div class="token-chip">{transportadora} <span>Parceiro logístico</span></div>
+      <div class="token-chip">{codigo do envio} <span>ORD do pedido</span></div>
+      <div class="token-chip">{classificacao} <span>Classificação do ticket</span></div>
+      <div class="token-chip">{nivel} <span>Nível de atendimento</span></div>
+      <div class="token-chip">{departamento} <span>Departamento</span></div>
+      <div class="token-chip">{ticket} <span>Número do ticket</span></div>
+      <div class="token-chip">{campo: Nome do campo} <span>Qualquer campo do ticket</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- SOBRE -->
+<section id="sobre">
+  <div class="section-inner">
+    <div class="section-label">Sobre o projeto</div>
+    <h2 class="section-title">Construído por quem atende.</h2>
+    <div class="about-grid">
+      <div class="about-text">
+        <p>Slash nasceu dentro do time de CX do Melhor Envio para resolver um problema real: agentes perdendo tempo copiando e colando respostas de planilhas, documentos e anotações pessoais.</p>
+        <p>Desenvolvido por Bruno Marques Freitas, analista CX/CS no Melhor Envio (grupo LWSA) e estudante de Sistemas de Informação na UNIVEM, o Slash é uma ferramenta que funciona 100% no navegador, sem servidor, sem banco de dados externo e sem custo de infraestrutura.</p>
+        <p>O projeto está em desenvolvimento ativo. Sugestões e feedbacks são bem-vindos.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- PRIVACIDADE -->
+<section class="privacy" id="privacidade">
+  <div class="section-inner">
+    <div class="section-label">Legal</div>
+    <h2 class="section-title">Política de Privacidade</h2>
+    <p class="section-sub">Última atualização: agosto de 2026</p>
+    <div class="privacy-box">
+
+      <div class="privacy-highlight">
+        Slash não coleta, vende ou compartilha seus dados pessoais com terceiros. Suas macros ficam salvas localmente no seu navegador e pertencem a você.
+      </div>
+
+      <h3>1. Quem somos</h3>
+      <p>Slash ("a Extensão") é uma extensão para Google Chrome desenvolvida por Bruno Marques Freitas, disponibilizada para uso por times de atendimento ao cliente.</p>
+      <p>Contato: <a href="mailto:brunomfreitas014@gmail.com" style="color:var(--blue)">brunomfreitas014@gmail.com</a></p>
+
+      <h3>2. Quais dados a extensão armazena</h3>
+      <p>A Extensão armazena os seguintes dados <strong>exclusivamente no seu próprio navegador</strong>, sem transmiti-los a nenhum servidor:</p>
+      <ul>
+        <li><strong>Dados de autenticação:</strong> nome, endereço de e-mail e foto de perfil fornecidos pela sua conta Google via OAuth 2.0, armazenados localmente para identificação do usuário na interface.</li>
+        <li><strong>Macros e atalhos:</strong> textos, títulos e atalhos criados por você, salvos no <code>chrome.storage.local</code> do seu navegador.</li>
+        <li><strong>Imagens incorporadas:</strong> imagens anexadas às macros, armazenadas localmente no <code>chrome.storage.local</code>.</li>
+        <li><strong>Preferências de uso:</strong> configurações como modo de ativação e shortcuts personalizados, armazenadas no <code>chrome.storage.sync</code>.</li>
+      </ul>
+
+      <h3>3. O que não coletamos</h3>
+      <ul>
+        <li>Não lemos, gravamos ou transmitimos o conteúdo dos tickets ou conversas de atendimento.</li>
+        <li>Não rastreamos seu histórico de navegação.</li>
+        <li>Não enviamos nenhum dado para servidores externos, bancos de dados em nuvem ou terceiros.</li>
+        <li>Não compartilhamos dados com redes de publicidade ou corretores de dados.</li>
+        <li>Não vendemos informações pessoais.</li>
+        <li>Não utilizamos ferramentas de analytics ou rastreamento comportamental.</li>
+      </ul>
+
+      <h3>4. Como usamos os dados</h3>
+      <ul>
+        <li>Identificar o usuário logado e exibir nome e foto na interface da extensão.</li>
+        <li>Armazenar e recuperar as macros criadas por você entre sessões do navegador.</li>
+        <li>Preencher variáveis dinâmicas (como <code>{cliente}</code> e <code>{atendente}</code>) lendo os campos visíveis do ticket aberto no momento do uso — esses dados não são gravados em nenhum lugar.</li>
+      </ul>
+
+      <h3>5. Onde os dados são armazenados</h3>
+      <p>Todos os dados ficam armazenados <strong>no seu próprio navegador Chrome</strong>, via <code>chrome.storage.local</code> e <code>chrome.storage.sync</code>. Nenhum dado é transmitido a servidores externos nesta versão da extensão.</p>
+      <p>O <code>chrome.storage.sync</code> pode sincronizar preferências entre dispositivos usando a infraestrutura do Google Chrome — essa sincronização é gerenciada pelo próprio Chrome e sujeita à Política de Privacidade do Google.</p>
+
+      <h3>6. Permissões da extensão</h3>
+      <p>A Extensão solicita as seguintes permissões e suas justificativas:</p>
+      <ul>
+        <li><strong>identity:</strong> autenticação via conta Google para identificar o usuário na interface.</li>
+        <li><strong>storage / unlimitedStorage:</strong> salvar macros, imagens e preferências localmente no navegador.</li>
+        <li><strong>clipboardWrite:</strong> copiar o conteúdo de uma macro para a área de transferência quando solicitado pelo usuário.</li>
+        <li><strong>scripting / host_permissions (all_urls):</strong> detectar campos de texto ativos em qualquer página para inserir o conteúdo da macro quando acionado pelo usuário. A extensão <strong>não lê</strong> o conteúdo das páginas — apenas injeta texto onde você já está digitando.</li>
+      </ul>
+
+      <h3>7. Compartilhamento de dados</h3>
+      <p>Nesta versão, seus dados não são compartilhados com nenhum terceiro. A extensão opera inteiramente offline após a autenticação inicial do Google.</p>
+
+      <h3>8. Retenção e exclusão</h3>
+      <p>Seus dados ficam armazenados no navegador enquanto a extensão estiver instalada. Para excluir seus dados:</p>
+      <ul>
+        <li>Remova suas macros diretamente na interface da extensão.</li>
+        <li>Desinstale a extensão — isso apaga todos os dados locais associados a ela.</li>
+        <li>Para dúvidas adicionais, entre em contato pelo e-mail abaixo.</li>
+      </ul>
+
+      <h3>9. Segurança</h3>
+      <p>Como os dados ficam armazenados localmente no seu navegador, a segurança deles depende da segurança do seu perfil do Chrome e do seu dispositivo. Recomendamos manter o navegador atualizado e usar bloqueio de tela no dispositivo.</p>
+
+      <h3>10. Menores de idade</h3>
+      <p>A Extensão é destinada a uso profissional por adultos. Não coletamos intencionalmente dados de menores de 18 anos.</p>
+
+      <h3>11. Alterações nesta política</h3>
+      <p>Esta política pode ser atualizada conforme a extensão evolui. Em caso de alterações relevantes, a data de "última atualização" no topo desta página será modificada. O uso continuado da extensão após as alterações implica concordância com a nova política.</p>
+
+      <h3>12. Contato</h3>
+      <p>Dúvidas ou qualquer questão relacionada à privacidade: <a href="mailto:brunomfreitas014@gmail.com" style="color:var(--blue)">brunomfreitas014@gmail.com</a></p>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    © 2026 Slash · Desenvolvido por Bruno Marques Freitas ·
+    <a href="#privacidade">Política de Privacidade</a>
+  </p>
+</footer>
+
+</body>
+</html>
